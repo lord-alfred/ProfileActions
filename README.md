@@ -69,7 +69,10 @@ ProfileActions v.1.0
 > void SetHeader(Instance instance, string thread_id, string headername, string value, bool is_navigator_field=true)
 
 Расширенный вариант стандартного метода [instance.SetHeader](https://help.zennolab.com/en/v5/zennoposter/5.10.3/webframe.html#topic246.html), все устанавливаемые значения сохраняются в профиль.
+
 Список заголовков инстанса, которые можно устанавливать - можно взять отсюда: [NavigatorField Members](https://help.zennolab.com/en/v5/zennoposter/5.10.3/topic630.html).
+
+*Примечание:* согласно стандартным ограничениям метода *instance.SetHeader* - текущий метод нужно вызывать перед вызовом любого другого метода объекта *Instance*.
 
 
 *Параметры:*
@@ -84,8 +87,6 @@ ProfileActions v.1.0
 
 > ProfileActions.SetHeader(instance, project.Variables["thread_id"].Value, "Language", "ru");
 > ProfileActions.SetHeader(instance, project.Variables["thread_id"].Value, "HTTP_USER_AGENT", "ZennoPoster", false);
-
-*Примечание:* согласно стандартным ограничениям метода *instance.SetHeader* - текущий метод нужно вызывать перед вызовом любого другого метода объекта *Instance*.
 
  - **Сохранение профиля со свойствами и заголовками инстанса**
 
