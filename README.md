@@ -9,19 +9,14 @@ ProfileActions v.1.0
 ---------
 
 1. Взять `ProfileActions.dll` и положить в директорию:
-
 > C:\Program Files (x86)\ZennoLab\RU\ZennoPoster Pro\5.10.3.1\Progs\ExternalAssemblies
-
 2. Перезапустить ZennoPoster/ProjectMaker
 3. В проекте выбрать `Добавить действие` -> `Свой код` -> `Ссылки из GAC`
 4. Зайти в появившийся внизу блок `References` (в Расширенном редакторе), нажать кнопку `Добавить...`, затем кнопку `Обзор...`
 5. В появившемся окне выбрать:
-
 > C:\Program Files (x86)\ZennoLab\RU\ZennoPoster Pro\5.10.3.1\Progs\ExternalAssemblies\ProfileActions.dll
-
 6. В проекте выбрать `Добавить действие` -> `Свой код` -> `Директивы using и общий код`
 7. Зайти в появившийся внизу блок `OwnCodeUsings` (в Расширенном редакторе) и в окне "Директивы Using" вставить:
-
 > using ZPProfileActions;
 
  После этого у вас в код появится класс `ProfileActions` с публичными методами, описанными ниже.
