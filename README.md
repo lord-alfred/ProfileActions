@@ -8,13 +8,11 @@ ProfileActions v.1.0
 Установка
 ---------
 
-1. Взять `ProfileActions.dll` и положить в директорию:
-> C:\Program Files (x86)\ZennoLab\RU\ZennoPoster Pro\5.10.3.1\Progs\ExternalAssemblies
+1. Взять `ProfileActions.dll` и положить в директорию: `C:\Program Files (x86)\ZennoLab\RU\ZennoPoster Pro\5.10.3.1\Progs\ExternalAssemblies`
 2. Перезапустить ZennoPoster/ProjectMaker
 3. В проекте выбрать `Добавить действие` -> `Свой код` -> `Ссылки из GAC`
 4. Зайти в появившийся внизу блок `References` (в Расширенном редакторе), нажать кнопку `Добавить...`, затем кнопку `Обзор...`
-5. В появившемся окне выбрать:
-> C:\Program Files (x86)\ZennoLab\RU\ZennoPoster Pro\5.10.3.1\Progs\ExternalAssemblies\ProfileActions.dll
+5. В появившемся окне выбрать: `C:\Program Files (x86)\ZennoLab\RU\ZennoPoster Pro\5.10.3.1\Progs\ExternalAssemblies\ProfileActions.dll`
 6. В проекте выбрать `Добавить действие` -> `Свой код` -> `Директивы using и общий код`
 7. Зайти в появившийся внизу блок `OwnCodeUsings` (в Расширенном редакторе) и в окне "Директивы Using" вставить:
 > using ZPProfileActions;
@@ -28,7 +26,7 @@ ProfileActions v.1.0
 
  - **Генерация идентификатора потока**
 
-    string GenerateThreadID()
+> string GenerateThreadID()
 
 Необходим для работы в многопоточном режиме, чтобы не потерять и не перезаписать данные одного потока из другого.
 
@@ -38,7 +36,7 @@ ProfileActions v.1.0
 
  - **Установка значения свойства профиля**
 
-    void SetProperty(IZennoPosterProjectModel project, string thread_id, string propname, string value)
+> void SetProperty(IZennoPosterProjectModel project, string thread_id, string propname, string value)
 
 *Параметры:*
 project - переменная проекта
@@ -52,7 +50,7 @@ value - значение свойства
 
  - **Получение значения свойства профиля**
 
-    string GetProperty(string thread_id, string propname)
+> string GetProperty(string thread_id, string propname)
 
 *Параметры:*
 thread_id - идентификатор потока
@@ -64,7 +62,7 @@ propname - имя свойства
 
  - **Установка значения заголовка инстанса**
 
-    void SetHeader(Instance instance, string thread_id, string headername, string value, bool is_navigator_field=true)
+> void SetHeader(Instance instance, string thread_id, string headername, string value, bool is_navigator_field=true)
 
 Расширенный вариант стандартного метода [instance.SetHeader](https://help.zennolab.com/en/v5/zennoposter/5.10.3/webframe.html#topic246.html), все устанавливаемые значения сохраняются в профиль.
 
@@ -84,7 +82,7 @@ is_navigator_field - true при установке поля `ZennoLab.Interface
 
  - **Сохранение профиля со свойствами и заголовками инстанса**
 
-    void Save(IZennoPosterProjectModel project, string thread_id, string path, bool saveProxy=false, bool savePlugins=false, bool saveLocalStorage=false, bool saveTimezone=false, bool saveGeoposition=false, bool destroy_thread=false)
+> void Save(IZennoPosterProjectModel project, string thread_id, string path, bool saveProxy=false, bool savePlugins=false, bool saveLocalStorage=false, bool saveTimezone=false, bool > saveGeoposition=false, bool destroy_thread=false)
 
 *Параметры:*
 project - переменная проекта
@@ -104,7 +102,7 @@ destroy_thread - очистить все свойства профиля и за
 
  - **Загрузка профиля с простановкой свойств и заголовков инстанса**
 
-    void Load(IZennoPosterProjectModel project, Instance instance, string thread_id, string path)
+> void Load(IZennoPosterProjectModel project, Instance instance, string thread_id, string path)
 
 *Параметры:*
 project - переменная проекта
