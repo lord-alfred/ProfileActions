@@ -1,4 +1,4 @@
-ProfileActions v.1.0
+ProfileActions v1.0
 ====================
 
 Расширенный вариант работы с профилями в ZennoPoster. Возможность сохранять не только информацию о профиле в **.zpprofile*, но и заголовки инстанса, устанавливаемые методом *instance.SetHeader*.
@@ -8,7 +8,7 @@ ProfileActions v.1.0
 Установка
 ---------
 
-1. Взять `ProfileActions.dll` и положить в директорию: `C:\Program Files (x86)\ZennoLab\RU\ZennoPoster Pro\5.10.3.1\Progs\ExternalAssemblies`
+1. Взять [`ProfileActions.dll`](https://github.com/lord-alfred/ProfileActions/releases/tag/v1.0) и положить в директорию: `C:\Program Files (x86)\ZennoLab\RU\ZennoPoster Pro\5.10.3.1\Progs\ExternalAssemblies`
 2. Перезапустить ZennoPoster/ProjectMaker
 3. В проекте выбрать `Добавить действие` -> `Свой код` -> `Ссылки из GAC`
 4. Зайти в появившийся внизу блок `References` (в Расширенном редакторе), нажать кнопку `Добавить...`, затем кнопку `Обзор...`
