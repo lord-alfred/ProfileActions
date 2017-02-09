@@ -38,6 +38,8 @@ ProfileActions v.1.0
 
 > void SetProperty(IZennoPosterProjectModel project, string thread_id, string propname, string value)
 
+Список свойств профиля, которые можно устанавливать - можно взять отсюда: [Profile Public Properties](https://help.zennolab.com/en/v5/zennoposter/5.10.3/topic854.html).
+
 *Параметры:*
 
 	project - переменная проекта
@@ -67,6 +69,8 @@ ProfileActions v.1.0
 > void SetHeader(Instance instance, string thread_id, string headername, string value, bool is_navigator_field=true)
 
 Расширенный вариант стандартного метода [instance.SetHeader](https://help.zennolab.com/en/v5/zennoposter/5.10.3/webframe.html#topic246.html), все устанавливаемые значения сохраняются в профиль.
+Список заголовков инстанса, которые можно устанавливать - можно взять отсюда: [NavigatorField Members](https://help.zennolab.com/en/v5/zennoposter/5.10.3/topic630.html).
+
 
 *Параметры:*
 
