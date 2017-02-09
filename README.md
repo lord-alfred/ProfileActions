@@ -83,7 +83,7 @@ is_navigator_field - true при установке поля `ZennoLab.Interface
 *Примеры использования:*
 
 > ProfileActions.SetHeader(instance, project.Variables["thread_id"].Value, "Language", "ru");
-> ProfileActions.SetHeader(instance, project.Variables["thread_id"].Value, "HTTP_USER_AGENT", "ZennoPoster");
+> ProfileActions.SetHeader(instance, project.Variables["thread_id"].Value, "HTTP_USER_AGENT", "ZennoPoster", false);
 
 *Примечание:* согласно стандартным ограничениям метода *instance.SetHeader* - текущий метод нужно вызывать перед вызовом любого другого метода объекта *Instance*.
 
