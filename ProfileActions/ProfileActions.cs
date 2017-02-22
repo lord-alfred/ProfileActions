@@ -16,37 +16,48 @@ using ZennoLab.InterfacesLibrary.ProjectModel.Collections;
 namespace ZPProfileActions
 {
 	public static class ProfileActions
-	{	
+	{
 		// store data
-		private static List<string> threads = new List<string>();
-		private static Dictionary<string, Dictionary<string, string>> properties = new Dictionary<string, Dictionary<string, string>>();
-		private static Dictionary<string, Dictionary<string, string>> headers = new Dictionary<string, Dictionary<string, string>>();
-		
+		[ThreadStatic] private static Dictionary<string, string> properties;
+		[ThreadStatic] private static Dictionary<string, string> headers;
+
 		// extensions
 		private const string property_ext = "property";
 		private const string header_ext = "header";
-
-
+		
+		
 		/// <summary>
-		/// генерация уникального id для потока
+		/// инициализация свойств профиля для многопотчного режима
+		/// (из-за ThreadStatic: http://stackoverflow.com/questions/18086235/initializing-threadstatic-field-still-causes-nullreferenceexception )
 		/// </summary>
-		public static string GenerateThreadID() {
-			return Guid.NewGuid().ToString("N");
+		///
+		private static void InitProperies() {
+			if (ProfileActions.properties == null) {
+				ProfileActions.properties = new Dictionary<string, string>();
+			}
 		}
 		
 		/// <summary>
+		/// инициализация заголовков инстанса для многопотчного режима
+		/// (из-за ThreadStatic: http://stackoverflow.com/questions/18086235/initializing-threadstatic-field-still-causes-nullreferenceexception )
+		/// </summary>
+		///
+		private static void InitHeaders() {
+			if (ProfileActions.headers == null) {
+				ProfileActions.headers = new Dictionary<string, string>();
+			}
+		}
+
+		/// <summary>
 		/// установка значения свойства профиля
 		/// </summary>
-		public static void SetProperty(IZennoPosterProjectModel project, string thread_id, string propname, string value) {
-			ProfileActions.CheckThreadID(thread_id, true);
-
-			if (!ProfileActions.properties.ContainsKey(thread_id)) {
-				ProfileActions.properties[thread_id] = new Dictionary<string, string>();
-			}
-			if (!ProfileActions.properties[thread_id].ContainsKey(propname)) {
-				ProfileActions.properties[thread_id].Add(propname, value);
+		public static void SetProperty(IZennoPosterProjectModel project, string propname, string value) {
+			ProfileActions.InitProperies();
+			
+			if (!ProfileActions.properties.ContainsKey(propname)) {
+				ProfileActions.properties.Add(propname, value);
 			} else {
-				ProfileActions.properties[thread_id][propname] = value;
+				ProfileActions.properties[propname] = value;
 			}
 			
 			try {
@@ -64,13 +75,13 @@ namespace ZPProfileActions
 		/// <summary>
 		/// получения значения свойства профиля
 		/// </summary>
-		public static string GetProperty(string thread_id, string propname) {
-			ProfileActions.CheckThreadID(thread_id);
-
-			if (!ProfileActions.properties[thread_id].ContainsKey(propname)) {
+		public static string GetProperty(string propname) {
+			ProfileActions.InitProperies();
+			
+			if (!ProfileActions.properties.ContainsKey(propname)) {
 				throw new Exception(String.Format("[ProfileActions.GetProperty]: property '{0}' not found!", propname));
 			}
-			return ProfileActions.properties[thread_id][propname];
+			return ProfileActions.properties[propname];
 		}
 
 		/// <summary>
@@ -79,22 +90,18 @@ namespace ZPProfileActions
 		/// <remarks>
 		/// The method call is made before calling any other methods of an Instance object.
 		/// </remarks>
-		public static void SetHeader(Instance instance, string thread_id, string headername, string value, bool is_navigator_field=true) {
-			ProfileActions.CheckThreadID(thread_id, true);
-
-			if (!ProfileActions.headers.ContainsKey(thread_id)) {
-				ProfileActions.headers[thread_id] = new Dictionary<string, string>();
-			}
+		public static void SetHeader(Instance instance, string headername, string value, bool is_navigator_field=true) {
+			ProfileActions.InitHeaders();
 			
 			string headername_key = headername;
 			if (!is_navigator_field) {
 				headername_key = String.Concat(headername, "+"); // small hack: define *string* header names (example: "HTTP_USER_AGENT")
 			}
 			
-			if (!ProfileActions.headers[thread_id].ContainsKey(headername_key)) {
-				ProfileActions.headers[thread_id].Add(headername_key, value);
+			if (!ProfileActions.headers.ContainsKey(headername_key)) {
+				ProfileActions.headers.Add(headername_key, value);
 			} else {
-				ProfileActions.headers[thread_id][headername_key] = value;
+				ProfileActions.headers[headername_key] = value;
 			}
 			
 			if (!is_navigator_field) {
@@ -115,41 +122,31 @@ namespace ZPProfileActions
 				}
 			}
 		}
-		
+
 		/// <summary>
 		/// получения значения заголовка инстанса (приватный метод, т.к. в ZP нельзя получить значение через C#)
 		/// </summary>
-		private static string GetHeader(string thread_id, string headername) {
-			ProfileActions.CheckThreadID(thread_id);
-
-			if (!ProfileActions.headers[thread_id].ContainsKey(headername)) {
+		private static string GetHeader(string headername) {
+			ProfileActions.InitHeaders();
+			
+			if (!ProfileActions.headers.ContainsKey(headername)) {
 				throw new Exception(String.Format("[ProfileActions.GetHeader]: header '{0}' not found!", headername));
 			}
-			return ProfileActions.headers[thread_id][headername];
+			return ProfileActions.headers[headername];
 		}
-		
+
 		/// <summary>
 		/// сохранения профиля со свойствами и заголовками инстанса
 		/// </summary>
-		/// <remarks>
-		/// destroy_thread param default set to false. Be careful!
-		/// </remarks>
 		public static void Save(
 			IZennoPosterProjectModel project,
-			string thread_id,
 			string path,
 			bool saveProxy=false,
 			bool savePlugins=false,
 			bool saveLocalStorage=false,
 			bool saveTimezone=false,
-			bool saveGeoposition=false,
-			bool destroy_thread=false
+			bool saveGeoposition=false
 		) {
-			// закомментирую это, т.к. до конца не ясно - нужно ли вызывать этот метод тут
-			// если не задавать свойств и заголовков, то будет валиться ошибка
-			// хотя по сути проверка идет дальше в getter'ах
-			// ProfileActions.CheckThreadID(thread_id);
-			
 			// сохраняем профиль стандартным методом (чтоб сохранить куки и т.д.)
 			project.Profile.Save(path, saveProxy, savePlugins, saveLocalStorage, saveTimezone, saveGeoposition);
 
@@ -158,32 +155,26 @@ namespace ZPProfileActions
 				using (var zipToOpen = new FileStream(path, FileMode.Open)) {
 					using (var archive = new ZipArchive(zipToOpen, ZipArchiveMode.Update)) {
 						// свойства профиля
-						foreach(var propname in ProfileActions.properties[thread_id].Keys) {
+						foreach(var propname in ProfileActions.properties.Keys) {
 							var entry_name = String.Concat(propname, ".", ProfileActions.property_ext);
 							ZipArchiveEntry entry = archive.CreateEntry(entry_name);
 							using (var writer = new StreamWriter(entry.Open())) {
-								var propvalue = ProfileActions.GetProperty(thread_id, propname);
+								var propvalue = ProfileActions.GetProperty(propname);
 								writer.Write(propvalue);
 							}
 						}
 						
 						// заголовки инстанса
-						foreach(var headername in ProfileActions.headers[thread_id].Keys) {
+						foreach(var headername in ProfileActions.headers.Keys) {
 							var entry_name = String.Concat(headername, ".", ProfileActions.header_ext);
 							ZipArchiveEntry entry = archive.CreateEntry(entry_name);
 							using (var writer = new StreamWriter(entry.Open())) {
-								var headervalue = ProfileActions.GetHeader(thread_id, headername);
+								var headervalue = ProfileActions.GetHeader(headername);
 								writer.Write(headervalue);
 							}
 						}
 					}
 				}
-			}
-	
-			// можно прострелить себе ногу, т.к. при повторном сохранении с удалением данных о потоке
-			// НЕ сохранятся заголовки инстанса и свойства профиля, т.к. будут удалены
-			if (destroy_thread) {
-				ProfileActions.DestroyThreadID(thread_id);
 			}
 		}
 		
@@ -193,13 +184,8 @@ namespace ZPProfileActions
 		public static void Load(
 			IZennoPosterProjectModel project,
 			Instance instance,
-			string thread_id,
 			string path
 		) {
-			// закомментирую это, т.к. до конца не ясно - нужно ли вызывать этот метод тут
-			// хотя по сути проверка идет дальше в setter'ах
-			// ProfileActions.CheckThreadID(thread_id, true);
-			
 			if (!File.Exists(path)) {
 				throw new Exception(String.Format("[ProfileActions.Load]: path '{0}' not exists!", path));
 			}
@@ -223,7 +209,7 @@ namespace ZPProfileActions
 							case ProfileActions.property_ext: // свойства профиля
 								using (var reader = new StreamReader(entry.Open())) {
 									string value = reader.ReadLine();
-									ProfileActions.SetProperty(project, thread_id, name, value);
+									ProfileActions.SetProperty(project, name, value);
 									
 									if (name == "ScreenSizeWidth") {
 										ScreenSizeWidth = Convert.ToInt32(value);
@@ -240,7 +226,7 @@ namespace ZPProfileActions
 									if (!is_navigator_field) {
 										name = name.Substring(0, name.Length-1); // small hack
 									}
-									ProfileActions.SetHeader(instance, thread_id, name, value, is_navigator_field);
+									ProfileActions.SetHeader(instance, name, value, is_navigator_field);
 								}
 								break;
 							default:
@@ -249,39 +235,11 @@ namespace ZPProfileActions
 					}
 				}
 			}
-			
+
 			// установка размеров окна инстанса (вроде бы работает только в ZP)
 			if ((ScreenSizeWidth > 0) && (ScreenSizeHeight > 0)) {
 				instance.SetWindowSize(ScreenSizeWidth, ScreenSizeHeight);
 			}
-		}
-		
-		/// <summary>
-		/// проверка на присутствие id потока
-		/// </summary>
-		private static void CheckThreadID(string thread_id, bool create_if_not_exists=false) {
-			if (String.IsNullOrEmpty(thread_id)) {
-				throw new Exception("[ProfileActions]: thread_id is empty!");
-			}
-			if (!ProfileActions.threads.Contains(thread_id)) {
-				if (!create_if_not_exists) {
-					throw new Exception(String.Format("[ProfileActions]: thread_id with value '{0}' not found!", thread_id));
-				} else {
-					ProfileActions.threads.Add(thread_id);
-				}
-			}
-		}
-		
-		/// <summary>
-		/// Garbage Collector (чтоб не засрать память и ничего не потекло)
-		/// </summary>
-		public static void DestroyThreadID(string thread_id) {
-			// пока что не ясно нужно ли это тут, скорее всего не нужно
-			// ProfileActions.CheckThreadID(thread_id);
-
-			ProfileActions.threads.Remove(thread_id);		// false if not exists
-			ProfileActions.properties.Remove(thread_id);	// false if not exists
-			ProfileActions.headers.Remove(thread_id);		// false if not exists
 		}
 	}
 }
