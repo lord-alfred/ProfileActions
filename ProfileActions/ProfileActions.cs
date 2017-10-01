@@ -17,6 +17,10 @@ namespace ZPProfileActions
 {
 	public static class ProfileActions
 	{
+		// блокировка при сохранении/загрузке,
+		// чтобы не попортить данные
+		private static Object FileLock = new Object();
+		
 		// store data
 		[ThreadStatic] private static Dictionary<string, string> properties;
 		[ThreadStatic] private static Dictionary<string, string> headers;
@@ -145,32 +149,38 @@ namespace ZPProfileActions
 			bool savePlugins=false,
 			bool saveLocalStorage=false,
 			bool saveTimezone=false,
-			bool saveGeoposition=false
+			bool saveGeoposition=false,
+			bool saveSuperCookie=false,
+			bool saveFonts=false,
+			bool saveWebRtc=false,
+			bool saveIndexedDb=false
 		) {
-			// сохраняем профиль стандартным методом (чтоб сохранить куки и т.д.)
-			project.Profile.Save(path, saveProxy, savePlugins, saveLocalStorage, saveTimezone, saveGeoposition);
-
-			// сохраняем свойства профиля и заголовки инстанса - каждый в свой файл
-			if ((ProfileActions.properties.Count > 0) || (ProfileActions.headers.Count > 0)) {
-				using (var zipToOpen = new FileStream(path, FileMode.Open)) {
-					using (var archive = new ZipArchive(zipToOpen, ZipArchiveMode.Update)) {
-						// свойства профиля
-						foreach(var propname in ProfileActions.properties.Keys) {
-							var entry_name = String.Concat(propname, ".", ProfileActions.property_ext);
-							ZipArchiveEntry entry = archive.CreateEntry(entry_name);
-							using (var writer = new StreamWriter(entry.Open())) {
-								var propvalue = ProfileActions.GetProperty(propname);
-								writer.Write(propvalue);
+			lock (ProfileActions.FileLock) {
+				// сохраняем профиль стандартным методом (чтоб сохранить куки и т.д.)
+				project.Profile.Save(path, saveProxy, savePlugins, saveLocalStorage, saveTimezone, saveGeoposition, saveSuperCookie, saveFonts, saveWebRtc, saveIndexedDb);
+	
+				// сохраняем свойства профиля и заголовки инстанса - каждый в свой файл
+				if ((ProfileActions.properties.Count > 0) || (ProfileActions.headers.Count > 0)) {
+					using (var zipToOpen = new FileStream(path, FileMode.Open)) {
+						using (var archive = new ZipArchive(zipToOpen, ZipArchiveMode.Update)) {
+							// свойства профиля
+							foreach(var propname in ProfileActions.properties.Keys) {
+								var entry_name = String.Concat(propname, ".", ProfileActions.property_ext);
+								ZipArchiveEntry entry = archive.CreateEntry(entry_name);
+								using (var writer = new StreamWriter(entry.Open())) {
+									var propvalue = ProfileActions.GetProperty(propname);
+									writer.Write(propvalue);
+								}
 							}
-						}
-						
-						// заголовки инстанса
-						foreach(var headername in ProfileActions.headers.Keys) {
-							var entry_name = String.Concat(headername, ".", ProfileActions.header_ext);
-							ZipArchiveEntry entry = archive.CreateEntry(entry_name);
-							using (var writer = new StreamWriter(entry.Open())) {
-								var headervalue = ProfileActions.GetHeader(headername);
-								writer.Write(headervalue);
+							
+							// заголовки инстанса
+							foreach(var headername in ProfileActions.headers.Keys) {
+								var entry_name = String.Concat(headername, ".", ProfileActions.header_ext);
+								ZipArchiveEntry entry = archive.CreateEntry(entry_name);
+								using (var writer = new StreamWriter(entry.Open())) {
+									var headervalue = ProfileActions.GetHeader(headername);
+									writer.Write(headervalue);
+								}
 							}
 						}
 					}
@@ -190,55 +200,57 @@ namespace ZPProfileActions
 				throw new Exception(String.Format("[ProfileActions.Load]: path '{0}' not exists!", path));
 			}
 			
-			// загрузка профиля
-			project.Profile.Load(path);
-			
-			// for window size
-			int ScreenSizeWidth = 0;
-			int ScreenSizeHeight = 0;
-			
-			// чтение и установка свойств профиля и заголовков инстанса
-			using (var zipToOpen = new FileStream(path, FileMode.Open)) {
-				using (var archive = new ZipArchive(zipToOpen, ZipArchiveMode.Read)) {
-					foreach (ZipArchiveEntry entry in archive.Entries) {
-						var filename = entry.FullName.Split(new char[] {'.'}); // TODO: fix this
-						string name = filename[0];
-						string file_ext = filename[1];
-
-						switch (file_ext) {
-							case ProfileActions.property_ext: // свойства профиля
-								using (var reader = new StreamReader(entry.Open())) {
-									string value = reader.ReadLine();
-									ProfileActions.SetProperty(project, name, value);
-									
-									if (name == "ScreenSizeWidth") {
-										ScreenSizeWidth = Convert.ToInt32(value);
+			lock (ProfileActions.FileLock) {
+				// загрузка профиля
+				project.Profile.Load(path);
+				
+				// for window size
+				int ScreenSizeWidth = 0;
+				int ScreenSizeHeight = 0;
+				
+				// чтение и установка свойств профиля и заголовков инстанса
+				using (var zipToOpen = new FileStream(path, FileMode.Open)) {
+					using (var archive = new ZipArchive(zipToOpen, ZipArchiveMode.Read)) {
+						foreach (ZipArchiveEntry entry in archive.Entries) {
+							var filename = entry.FullName.Split(new char[] {'.'}); // TODO: fix this
+							string name = filename[0];
+							string file_ext = filename[1];
+	
+							switch (file_ext) {
+								case ProfileActions.property_ext: // свойства профиля
+									using (var reader = new StreamReader(entry.Open())) {
+										string value = reader.ReadLine();
+										ProfileActions.SetProperty(project, name, value);
+										
+										if (name == "ScreenSizeWidth") {
+											ScreenSizeWidth = Convert.ToInt32(value);
+										}
+										if (name == "ScreenSizeHeight") {
+											ScreenSizeHeight = Convert.ToInt32(value);
+										}
 									}
-									if (name == "ScreenSizeHeight") {
-										ScreenSizeHeight = Convert.ToInt32(value);
+									break;
+								case ProfileActions.header_ext: // заголовки инстанса
+									using (var reader = new StreamReader(entry.Open())) {
+										string value = reader.ReadLine();
+										bool is_navigator_field = (name[name.Length-1] != '+');
+										if (!is_navigator_field) {
+											name = name.Substring(0, name.Length-1); // small hack
+										}
+										ProfileActions.SetHeader(instance, name, value, is_navigator_field);
 									}
-								}
-								break;
-							case ProfileActions.header_ext: // заголовки инстанса
-								using (var reader = new StreamReader(entry.Open())) {
-									string value = reader.ReadLine();
-									bool is_navigator_field = (name[name.Length-1] != '+');
-									if (!is_navigator_field) {
-										name = name.Substring(0, name.Length-1); // small hack
-									}
-									ProfileActions.SetHeader(instance, name, value, is_navigator_field);
-								}
-								break;
-							default:
-								break;
+									break;
+								default:
+									break;
+							}
 						}
 					}
 				}
-			}
-
-			// установка размеров окна инстанса (вроде бы работает только в ZP)
-			if ((ScreenSizeWidth > 0) && (ScreenSizeHeight > 0)) {
-				instance.SetWindowSize(ScreenSizeWidth, ScreenSizeHeight);
+	
+				// установка размеров окна инстанса (вроде бы работает только в ZP)
+				if ((ScreenSizeWidth > 0) && (ScreenSizeHeight > 0)) {
+					instance.SetWindowSize(ScreenSizeWidth, ScreenSizeHeight);
+				}
 			}
 		}
 	}

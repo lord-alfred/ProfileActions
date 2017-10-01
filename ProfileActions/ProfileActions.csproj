@@ -59,11 +59,11 @@
       <RequiredTargetFramework>3.5</RequiredTargetFramework>
     </Reference>
     <Reference Include="ZennoLab.CommandCenter">
-      <HintPath>..\..\..\..\Program Files %28x86%29\ZennoLab\RU\ZennoPoster Pro\5.10.3.1\Progs\ZennoLab.CommandCenter.dll</HintPath>
+      <HintPath>..\..\..\..\Program Files %28x86%29\ZennoLab\RU\ZennoPoster Pro\5.12.0.0\Progs\ZennoLab.CommandCenter.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="ZennoLab.InterfacesLibrary">
-      <HintPath>..\..\..\..\Program Files %28x86%29\ZennoLab\RU\ZennoPoster Pro\5.10.3.1\Progs\ZennoLab.InterfacesLibrary.dll</HintPath>
+      <HintPath>..\..\..\..\Program Files %28x86%29\ZennoLab\RU\ZennoPoster Pro\5.12.0.0\Progs\ZennoLab.InterfacesLibrary.dll</HintPath>
       <Private>False</Private>
     </Reference>
   </ItemGroup>
