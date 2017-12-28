@@ -22,12 +22,14 @@ namespace ZPProfileActions
 		private static Object FileLock = new Object();
 		
 		// store data
-		[ThreadStatic] private static Dictionary<string, string> properties;
-		[ThreadStatic] private static Dictionary<string, string> headers;
+		[ThreadStatic] private static Dictionary<string, string> properties = null;
+		[ThreadStatic] private static Dictionary<string, string> headers = null;
+		[ThreadStatic] private static List<string> variables = null;
 
 		// extensions
 		private const string property_ext = "property";
 		private const string header_ext = "header";
+		private const string variable_ext = "variable";
 		
 		
 		/// <summary>
@@ -49,6 +51,17 @@ namespace ZPProfileActions
 		private static void InitHeaders() {
 			if (ProfileActions.headers == null) {
 				ProfileActions.headers = new Dictionary<string, string>();
+			}
+		}
+		
+		/// <summary>
+		/// инициализация названий переменных для многопотчного режима
+		/// (из-за ThreadStatic: http://stackoverflow.com/questions/18086235/initializing-threadstatic-field-still-causes-nullreferenceexception )
+		/// </summary>
+		///
+		private static void InitVariables() {
+			if (ProfileActions.variables == null) {
+				ProfileActions.variables = new List<string>();
 			}
 		}
 
@@ -138,6 +151,46 @@ namespace ZPProfileActions
 			}
 			return ProfileActions.headers[headername];
 		}
+		
+		/// <summary>
+		/// создание переменной ZennoPoster через рефлексию (спасибо @Adigen)
+		/// </summary>
+		private static void CreateZPVariable(IZennoPosterProjectModel project, string varname, string varvalue) {
+			try {
+				var checker = project.Variables[varname];
+			} catch {  // FIXME: не ловится через 'ZennoLab.TemplateManipulator.V4.Helpers.InvalidVariableException'
+				object obj = project.Variables;
+				obj.GetType().GetMethod("QuickCreateVariable").Invoke(obj, new Object[]{varname});
+			}
+			
+			if (varvalue != null) {
+				project.Variables[varname].Value = varvalue;
+			}
+		}
+		
+		/// <summary>
+		/// добавление переменной для сохранения в профиль
+		/// </summary>
+		/// <remarks>
+		/// Этот метод НЕ вызывает обновление содержимого переменной в профиле!
+		/// Обновление происходит только в момент сохранения профиля!
+		/// </remarks>
+		public static void SpyVariable(IZennoPosterProjectModel project, string varname) {
+			ProfileActions.InitVariables();
+			
+			project.SendInfoToLog("Vars: " + String.Join(",", ProfileActions.variables.ToArray()), true);
+			
+			if (!ProfileActions.variables.Contains(varname)) {
+				ProfileActions.variables.Add(varname);
+			} else {
+				throw new Exception(String.Format(
+					"[ProfileActions.SpyVariable]: already spying on variable '{0}'!",
+					varname
+				));
+			}
+			
+			ProfileActions.CreateZPVariable(project, varname, null);  // null, чтобы случайно не очистить значение переменной
+		}
 
 		/// <summary>
 		/// сохранения профиля со свойствами и заголовками инстанса
@@ -160,7 +213,7 @@ namespace ZPProfileActions
 				project.Profile.Save(path, saveProxy, savePlugins, saveLocalStorage, saveTimezone, saveGeoposition, saveSuperCookie, saveFonts, saveWebRtc, saveIndexedDb);
 	
 				// сохраняем свойства профиля и заголовки инстанса - каждый в свой файл
-				if ((ProfileActions.properties.Count > 0) || (ProfileActions.headers.Count > 0)) {
+				if ((ProfileActions.properties.Count > 0) || (ProfileActions.headers.Count > 0) || (ProfileActions.variables.Count > 0)) {
 					using (var zipToOpen = new FileStream(path, FileMode.Open)) {
 						using (var archive = new ZipArchive(zipToOpen, ZipArchiveMode.Update)) {
 							// свойства профиля
@@ -180,6 +233,16 @@ namespace ZPProfileActions
 								using (var writer = new StreamWriter(entry.Open())) {
 									var headervalue = ProfileActions.GetHeader(headername);
 									writer.Write(headervalue);
+								}
+							}
+							
+							// содержимое переменных
+							foreach(var varname in ProfileActions.variables) {
+								var entry_name = String.Concat(varname, ".", ProfileActions.variable_ext);
+								ZipArchiveEntry entry = archive.CreateEntry(entry_name);
+								using (var writer = new StreamWriter(entry.Open())) {
+									var varvalue = project.Variables[varname].Value;
+									writer.Write(varvalue);
 								}
 							}
 						}
@@ -238,6 +301,12 @@ namespace ZPProfileActions
 											name = name.Substring(0, name.Length-1); // small hack
 										}
 										ProfileActions.SetHeader(instance, name, value, is_navigator_field);
+									}
+									break;
+								case ProfileActions.variable_ext: // содержимое переменных
+									using (var reader = new StreamReader(entry.Open())) {
+										string value = reader.ReadLine();
+										ProfileActions.CreateZPVariable(project, name, value);
 									}
 									break;
 								default:
